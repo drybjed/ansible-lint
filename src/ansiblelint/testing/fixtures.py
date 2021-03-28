@@ -7,6 +7,7 @@ pytest_plugins = ['ansiblelint.testing']
 """
 import copy
 import os
+from pathlib import Path
 
 import pytest
 
@@ -15,23 +16,26 @@ from ansiblelint.constants import DEFAULT_RULESDIR
 from ansiblelint.rules import RulesCollection
 from ansiblelint.runner import Runner
 from ansiblelint.testing import RunFromText
+from ansiblelint.file_utils import Lintable
+from typing import Union, Iterator
+from _pytest.fixtures import SubRequest
 
 
 @pytest.fixture
-def play_file_path(tmp_path):
+def play_file_path(tmp_path: Path) -> str:
     """Fixture to return a playbook path."""
     p = tmp_path / 'playbook.yml'
     return str(p)
 
 
 @pytest.fixture
-def runner(play_file_path, default_rules_collection):
+def runner(play_file_path: Union[Lintable, str], default_rules_collection: RulesCollection) -> Runner:
     """Fixture to return a Runner() instance."""
     return Runner(play_file_path, rules=default_rules_collection)
 
 
 @pytest.fixture
-def default_rules_collection():
+def default_rules_collection() -> RulesCollection:
     """Return default rule collection."""
     assert os.path.isdir(DEFAULT_RULESDIR)
     # For testing we want to manually enable opt-in rules
@@ -40,13 +44,13 @@ def default_rules_collection():
 
 
 @pytest.fixture
-def default_text_runner(default_rules_collection):
+def default_text_runner(default_rules_collection: RulesCollection) -> RunFromText:
     """Return RunFromText instance for the default set of collections."""
     return RunFromText(default_rules_collection)
 
 
 @pytest.fixture
-def rule_runner(request):
+def rule_runner(request: SubRequest) -> RunFromText:
     """Return runner for a specific rule class."""
     rule_class = request.param
     collection = RulesCollection()
@@ -55,7 +59,7 @@ def rule_runner(request):
 
 
 @pytest.fixture
-def config_options():
+def config_options() -> Iterator:
     """Return configuration options that will be restored after testrun."""
     global options  # pylint: disable=global-statement
     original_options = copy.deepcopy(options)
@@ -64,7 +68,7 @@ def config_options():
 
 
 @pytest.fixture
-def _play_files(tmp_path, request):
+def _play_files(tmp_path: Path, request: SubRequest) -> None:
     if request.param is None:
         return
     for play_file in request.param:
